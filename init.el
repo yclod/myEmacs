@@ -26,6 +26,9 @@
 		evil-nerd-commenter
 		popwin
 		fiplr
+		;; --- file tool ---
+		reveal-in-osx-finder
+		helm-ag
 		;; --- Major Mode ---
 		js2-mode
 		;; --- Minor Mode ---
@@ -105,7 +108,7 @@
 (global-set-key (kbd "C-c C-r") 'ivy-resume)
 (global-set-key (kbd "<f6>") 'ivy-resume)
 (global-set-key (kbd "M-x") 'counsel-M-x)
-(global-set-key (kbd "C-x C-f") 'counsel-find-file)
+(global-set-key (kbd "C-x C-o") 'counsel-find-file)
 (global-set-key (kbd "<f1> f") 'counsel-describe-function)
 (global-set-key (kbd "<f1> v") 'counsel-describe-variable)
 (global-set-key (kbd "<f1> l") 'counsel-find-library)
@@ -134,4 +137,32 @@
 (global-set-key "\C-x\ \C-r" 'recentf-open-files)
 (setq fiplr-ignored-globs '((directories (".git" ".svn"))
                             (files ("*.jpg" "*.png" "*.zip" "*~"))))
-(global-set-key (kbd "C-x f") 'fiplr-find-file)
+(global-set-key (kbd "C-x o") 'fiplr-find-file)
+(global-auto-revert-mode 1)
+(fset 'yes-or-no-p 'y-or-n-p)
+
+
+(put 'dired-find-alternate-file 'disabled nil)
+
+;; 主动加载 Dired Mode
+;; (require 'dired)
+;; (defined-key dired-mode-map (kbd "RET") 'dired-find-alternate-file)
+
+;; 延迟加载
+(with-eval-after-load 'dired
+  (define-key dired-mode-map (kbd "RET") 'dired-find-alternate-file))
+
+;; 改善引号补全
+(sp-local-pair '(emacs-lisp-mode lisp-interaction-mode) "'" nil :actions nil)
+
+;; 高亮括号
+(show-paren-mode 1)
+(define-advice show-paren-function (:around (fn) fix-show-paren-function)
+  "Highlight enclosing parens."
+  (cond ((looking-at-p "\\s(") (funcall fn))
+	(t (save-excursion
+	     (ignore-errors (backward-up-list))
+	     (funcall fn)))))
+
+;; ag search
+(global-set-key (kbd "C-x f") 'helm-do-ag-project-root)
