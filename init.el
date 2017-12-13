@@ -25,6 +25,7 @@
 		      smartparens
 		      evil-nerd-commenter
 		      popwin
+		      go-mode
 		      fiplr
 		      swift-mode
 		      ;; --- file tool ---
@@ -168,6 +169,53 @@
 
 ;; ag search
 (global-set-key (kbd "C-x p") 'helm-do-ag-project-root)
+
+(defun how-many-region (begin end regexp &optional interactive)
+  "Print number of non-trivial matches for REGEXP in region.                    
+   Non-interactive arguments are Begin End Regexp"
+  (interactive "r\nsHow many matches for (regexp): \np")
+  (let ((count 0) opoint)
+    (save-excursion
+      (setq end (or end (point-max)))
+      (goto-char (or begin (point)))
+      (while (and (< (setq opoint (point)) end)
+                  (re-search-forward regexp end t))
+        (if (= opoint (point))
+            (forward-char 1)
+          (setq count (1+ count))))
+      (if interactive (message "%d occurrences" count))
+      count)))
+
+
+(setq-default tab-width 4)
+
+(defun infer-indentation-style ()
+  ;; if our source file uses tabs, we use tabs, if spaces spaces, and if        
+  ;; neither, we use the current indent-tabs-mode                               
+  (let ((space-count (how-many-region (point-min) (point-max) "^  "))
+        (tab-count (how-many-region (point-min) (point-max) "^\t")))
+    (if (> space-count tab-count) (setq indent-tabs-mode nil))
+    (if (> tab-count space-count) (setq indent-tabs-mode t))))
+
+(add-hook 'python-mode-hook
+	  (lambda ()
+	    (setq indent-tabs-mode nil)
+	    (infer-indentation-style)))
+
+(defun my-go-mode-hook ()
+					; Call Gofmt before saving
+  (add-hook 'before-save-hook 'gofmt-before-save)
+					; Customize compile command to run go build
+  (if (not (string-match "go" compile-command))
+      (set (make-local-variable 'compile-command)
+           "go build -v && go test -v && go vet"))
+					; Godef jump key binding
+  (local-set-key (kbd "M-.") 'godef-jump)
+  (local-set-key (kbd "M-*") 'pop-tag-mark)
+  )
+(add-hook 'go-mode-hook 'my-go-mode-hook)
+
+
 (defun indent-buffer()
   (interactive)
   (indent-region (point-min) (point-max)))
@@ -201,10 +249,10 @@
   (setq deactivate-mark nil))
 
 (defun shift-region(numcols)
-" my trick to expand the region to the beginning and end of the area selected
+  " my trick to expand the region to the beginning and end of the area selected
  much in the handy way I liked in the Dreamweaver editor."
   (if (< (point)(mark))
-    (if (not(bolp))    (progn (beginning-of-line)(exchange-point-and-mark) (end-of-line)))
+      (if (not(bolp))    (progn (beginning-of-line)(exchange-point-and-mark) (end-of-line)))
     (progn (end-of-line)(exchange-point-and-mark)(beginning-of-line)))
   (setq region-start (region-beginning))
   (setq region-finish (region-end))
@@ -220,7 +268,7 @@ or expand the word preceding point. "
   (if  mark-active
       (indent-block)
     (if (looking-at "\\>")
-  (hippie-expand nil)
+	(hippie-expand nil)
       (insert "\t"))))
 
 (defun my-unindent()
@@ -249,8 +297,8 @@ Now it correctly stops at the beginning of the line when the pointer is at the f
               (backward-kill-word 1))))))))
 
 (add-hook 'find-file-hooks (function (lambda ()
- (unless (eq major-mode 'org-mode)
-(local-set-key (kbd "<tab>") 'indent-or-complete)))))
+				       (unless (eq major-mode 'org-mode)
+					 (local-set-key (kbd "<tab>") 'indent-or-complete)))))
 
 (if (not (eq  major-mode 'org-mode))
     (progn
@@ -260,22 +308,22 @@ Now it correctly stops at the beginning of the line when the pointer is at the f
 
 ;; mac and pc users would like selecting text this way
 (defun dave-shift-mouse-select (event)
- "Set the mark and then move point to the position clicked on with
+  "Set the mark and then move point to the position clicked on with
  the mouse. This should be bound to a mouse click event type."
- (interactive "e")
- (mouse-minibuffer-check event)
- (if mark-active (exchange-point-and-mark))
- (set-mark-command nil)
- ;; Use event-end in case called from mouse-drag-region.
- ;; If EVENT is a click, event-end and event-start give same value.
- (posn-set-point (event-end event)))
+  (interactive "e")
+  (mouse-minibuffer-check event)
+  (if mark-active (exchange-point-and-mark))
+  (set-mark-command nil)
+  ;; Use event-end in case called from mouse-drag-region.
+  ;; If EVENT is a click, event-end and event-start give same value.
+  (posn-set-point (event-end event)))
 
 ;; be aware that this overrides the function for picking a font. you can still call the command
 ;; directly from the minibufer doing: "M-x mouse-set-font"
 (define-key global-map [S-down-mouse-1] 'dave-shift-mouse-select)
 
 ;; to use in into emacs for  unix I  needed this instead
-; define-key global-map [S-mouse-1] 'dave-shift-mouse-select)
+					; define-key global-map [S-mouse-1] 'dave-shift-mouse-select)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; this final line is only necessary to escape the *scratch* fundamental-mode
