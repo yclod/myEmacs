@@ -12,6 +12,13 @@
 ;; You may delete these explanatory comments.
 (package-initialize)
 
+(package-initialize)
+(if (require 'quelpa nil t)
+    (quelpa-self-upgrade)
+  (with-temp-buffer
+    (url-insert-file-contents "https://raw.github.com/quelpa/quelpa/master/bootstrap.el")
+    (eval-buffer)))
+
 (require 'cl)
 
 ;; Add Packages
@@ -25,14 +32,17 @@
 		      smartparens
 		      evil-nerd-commenter
 		      popwin
-		      go-mode
 		      fiplr
 		      swift-mode
+              magit
+              neotree
 		      ;; --- file tool ---
 		      reveal-in-osx-finder
 		      helm-ag
 		      ;; --- Major Mode ---
+          go-mode
 		      js2-mode
+          typescript-mode
 		      ;; --- Minor Mode ---
 		      nodejs-repl
 		      exec-path-from-shell
@@ -62,11 +72,12 @@
       (scroll-bar-mode -1)))
 (global-linum-mode 1)
 (global-company-mode 1)
+(setq company-dabbrev-downcase nil)
 (setq cursor-type 'bar)
 (setq inhibit-splash-screen 1)
 (electric-indent-mode -1)
 (setq make-backup-file nil)
-(set-face-attribute 'default nil :height 160)
+;; (set-face-attribute 'default nil :height 160)
 (defun open-init-file()
   (interactive)
   (find-file "~/.emacs.d/init.el"))
@@ -78,14 +89,11 @@
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
    (quote
-    ("f146cf0feba4fed38730de65e924e26140b470a4d503287e9ddcf7cca0b5b3f0" default)))
- '(package-selected-packages (quote (evil-nerd-commenter smartparens company))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
+    ("ff7625ad8aa2615eae96d6b4469fcc7d3d20b2e1ebc63b761a349bebbb9d23cb" "3b36631f95ebfd9ec35f382249ad861f3b3d51f8bed4882184ec8745deaada28" "f146cf0feba4fed38730de65e924e26140b470a4d503287e9ddcf7cca0b5b3f0" default)))
+ '(js-indent-level 2)
+ '(package-selected-packages
+   (quote
+    (dracula-theme reason-mode evil-nerd-commenter smartparens company))))
 
 (global-hl-line-mode 1)
 (load-theme 'paganini 1)
@@ -202,6 +210,7 @@
 	    (setq indent-tabs-mode nil)
 	    (infer-indentation-style)))
 
+
 (defun my-go-mode-hook ()
 					; Call Gofmt before saving
   (add-hook 'before-save-hook 'gofmt-before-save)
@@ -238,73 +247,73 @@
 ;;(that is, we highlight the selected text)
 (transient-mark-mode t)
 
-(setq my-tab-width 4)
+;; (setq my-tab-width 4)
 
-(defun indent-block()
-  (shift-region my-tab-width)
-  (setq deactivate-mark nil))
+;; (defun indent-block()
+;;   (shift-region my-tab-width)
+;;   (setq deactivate-mark nil))
 
-(defun unindent-block()
-  (shift-region (- my-tab-width))
-  (setq deactivate-mark nil))
+;; (defun unindent-block()
+;;   (shift-region (- my-tab-width))
+;;   (setq deactivate-mark nil))
 
-(defun shift-region(numcols)
-  " my trick to expand the region to the beginning and end of the area selected
- much in the handy way I liked in the Dreamweaver editor."
-  (if (< (point)(mark))
-      (if (not(bolp))    (progn (beginning-of-line)(exchange-point-and-mark) (end-of-line)))
-    (progn (end-of-line)(exchange-point-and-mark)(beginning-of-line)))
-  (setq region-start (region-beginning))
-  (setq region-finish (region-end))
-  (save-excursion
-    (if (< (point) (mark)) (exchange-point-and-mark))
-    (let ((save-mark (mark)))
-      (indent-rigidly region-start region-finish numcols))))
+;; (defun shift-region(numcols)
+;;   " my trick to expand the region to the beginning and end of the area selected
+;;  much in the handy way I liked in the Dreamweaver editor."
+;;   (if (< (point)(mark))
+;;       (if (not(bolp))    (progn (beginning-of-line)(exchange-point-and-mark) (end-of-line)))
+;;     (progn (end-of-line)(exchange-point-and-mark)(beginning-of-line)))
+;;   (setq region-start (region-beginning))
+;;   (setq region-finish (region-end))
+;;   (save-excursion
+;;     (if (< (point) (mark)) (exchange-point-and-mark))
+;;     (let ((save-mark (mark)))
+;;       (indent-rigidly region-start region-finish numcols))))
 
-(defun indent-or-complete ()
-  "Indent region selected as a block; if no selection present either indent according to mode,
-or expand the word preceding point. "
-  (interactive)
-  (if  mark-active
-      (indent-block)
-    (if (looking-at "\\>")
-	(hippie-expand nil)
-      (insert "\t"))))
+;; (defun indent-or-complete ()
+;;   "Indent region selected as a block; if no selection present either indent according to mode,
+;; or expand the word preceding point. "
+;;   (interactive)
+;;   (if  mark-active
+;;       (indent-block)
+;;     (if (looking-at "\\>")
+;; 	(hippie-expand nil)
+;;       (insert "\t"))))
 
-(defun my-unindent()
-  "Unindent line, or block if it's a region selected.
-When pressing Shift+tab, erase words backward (one at a time) up to the beginning of line.
-Now it correctly stops at the beginning of the line when the pointer is at the first char of an indented line. Before the command would (unconveniently)  kill all the white spaces, as well as the last word of the previous line."
+;; (defun my-unindent()
+;;   "Unindent line, or block if it's a region selected.
+;; When pressing Shift+tab, erase words backward (one at a time) up to the beginning of line.
+;; Now it correctly stops at the beginning of the line when the pointer is at the first char of an indented line. Before the command would (unconveniently)  kill all the white spaces, as well as the last word of the previous line."
 
-  (interactive)
-  (if mark-active
-      (unindent-block)
-    (progn
-      (unless(bolp)
-        (if (looking-back "^[ \t]*")
-            (progn
-              ;;"a" holds how many spaces are there to the beginning of the line
-              (let ((a (length(buffer-substring-no-properties (point-at-bol) (point)))))
-                (progn
-                  ;; delete backwards progressively in my-tab-width steps, but without going further of the beginning of line.
-                  (if (> a my-tab-width)
-                      (delete-backward-char my-tab-width)
-                    (backward-delete-char a)))))
-          ;; delete tab and spaces first, if at least 2 exist, before removing words
-          (progn
-            (if(looking-back "[ \t]\\{2,\\}")
-                (delete-horizontal-space)
-              (backward-kill-word 1))))))))
+;;   (interactive)
+;;   (if mark-active
+;;       (unindent-block)
+;;     (progn
+;;       (unless(bolp)
+;;         (if (looking-back "^[ \t]*")
+;;             (progn
+;;               ;;"a" holds how many spaces are there to the beginning of the line
+;;               (let ((a (length(buffer-substring-no-properties (point-at-bol) (point)))))
+;;                 (progn
+;;                   ;; delete backwards progressively in my-tab-width steps, but without going further of the beginning of line.
+;;                   (if (> a my-tab-width)
+;;                       (delete-backward-char my-tab-width)
+;;                     (backward-delete-char a)))))
+;;           ;; delete tab and spaces first, if at least 2 exist, before removing words
+;;           (progn
+;;             (if(looking-back "[ \t]\\{2,\\}")
+;;                 (delete-horizontal-space)
+;;               (backward-kill-word 1))))))))
 
-(add-hook 'find-file-hooks (function (lambda ()
-				       (unless (eq major-mode 'org-mode)
-					 (local-set-key (kbd "<tab>") 'indent-or-complete)))))
+;; (add-hook 'find-file-hooks (function (lambda ()
+;; 				       (unless (eq major-mode 'org-mode)
+;; 					 (local-set-key (kbd "<tab>") 'indent-or-complete)))))
 
-(if (not (eq  major-mode 'org-mode))
-    (progn
-      (define-key global-map "\t" 'indent-or-complete) ;; with this you have to force tab (C-q-tab) to insert a tab after a word
-      (define-key global-map [S-tab] 'my-unindent)
-      (define-key global-map [C-S-tab] 'my-unindent)))
+;; (if (not (eq  major-mode 'org-mode))
+;;     (progn
+;;       (define-key global-map "\t" 'indent-or-complete) ;; with this you have to force tab (C-q-tab) to insert a tab after a word
+;;       (define-key global-map [S-tab] 'my-unindent)
+;;       (define-key global-map [C-S-tab] 'my-unindent)))
 
 ;; mac and pc users would like selecting text this way
 (defun dave-shift-mouse-select (event)
@@ -329,3 +338,58 @@ Now it correctly stops at the beginning of the line when the pointer is at the f
 ;; this final line is only necessary to escape the *scratch* fundamental-mode
 ;; and let this demonstration work
 (text-mode)
+
+(quelpa '(reason-mode :repo "reasonml-editor/reason-mode" :fetcher github :stable t))
+
+(add-to-list 'load-path "/some/path/neotree")
+(require 'neotree)
+(global-set-key [f8] 'neotree-toggle)
+
+(setq frame-title-format
+      (list (format "%s %%S: %%j " (system-name))
+        '(buffer-file-name "%f" (dired-directory dired-directory "%b"))))
+
+(add-hook 'js2-mode-hook
+	(lambda()
+		(setq-default indent-tabs-mode nil)
+		(setq-default tab-width 2)
+		(setq-default js2-basic-offset 2)
+    (setq js2-mode-show-parse-errors nil)
+    (setq js2-mode-show-strict-warnings nil)
+	))
+
+(add-hook 'typescript-mode-hook
+	(lambda()
+		(setq-default indent-tabs-mode nil)
+		(setq-default tab-width 2)
+    (setq-default typescript-indent-level 2)
+	))
+
+
+(delete-selection-mode 1)
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
+
+
+(defun set-frame-size-according-to-resolution ()
+  (interactive)
+  (if window-system
+  (progn
+    ;; use 180 char wide window for largeish displays
+    ;; and smaller 80 column windows for smaller displays
+    ;; pick whatever numbers make sense for you
+    (if (> (x-display-pixel-width) 1280)
+        (add-to-list 'default-frame-alist (cons 'width 180))
+      (add-to-list 'default-frame-alist (cons 'width 80)))
+    ;; for the height, subtract a couple hundred pixels
+    ;; from the screen height (for panels, menubars and
+    ;; whatnot), then divide by the height of a char to
+    ;; get the height we want
+    (add-to-list 'default-frame-alist 
+                 (cons 'height (/ (- (x-display-pixel-height) 200) (frame-char-height)))))))
+
+(set-frame-size-according-to-resolution)
